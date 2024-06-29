@@ -1,5 +1,10 @@
 pipeline {
     agent any
+
+    triggers {
+        githubPush()
+    }
+
     
     environment {
         REPO_URL = 'https://github.com/wasAmesha/CropMarketplace_CI_CD_Pipeline'
