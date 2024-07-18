@@ -5,62 +5,43 @@ pipeline {
         githubPush()
     }
 
-    
     environment {
         REPO_URL = 'https://github.com/wasAmesha/CropMarketplace_CI_CD_Pipeline'
-        DOCKERHUB_CREDENTIALS = credentials('dockerPassword')
-        DOCKER_IMAGE_NAME = 'ameshawas/crop_marketplace'
+        BRANCH = 'main'
+        DOCKER_REGISTRY = 'ameshawas'
+        APP_NAME = 'CROPXCHANGE'
+        PORT = '3000'
     }
-    
+
     stages {
-        stage('Checkout') {
+        stage('Clone Repository') {
             steps {
-                git url: "${REPO_URL}", branch: 'main'
+                git branch: "${BRANCH}", url: "${REPO_URL}"
             }
         }
-        
-        stage('Login to Docker Hub') {
+
+        stage('Build Docker Images') {
             steps {
-                withCredentials([string(credentialsId: 'dockerPassword', variable: 'dockerPassword')]) {
-                    script {
-                        bat "docker login -u ameshawas -p ${dockerPassword}"
-                    }
+                script {
+                    bat 'docker-compose build'
                 }
             }
         }
-        
-        stage('Build and Push Docker Images') {
+
+        stage('Push Docker Images') {
             steps {
-                // Build backend Docker image
-                dir('backend') {
-                    bat "docker build -t ${DOCKER_IMAGE_NAME}-backend:%BUILD_NUMBER% ."
-                    bat "docker push ${DOCKER_IMAGE_NAME}-backend:%BUILD_NUMBER%"
-                }
-                
-                // Build frontend Docker image
-                dir('frontend') {
-                    bat "docker build -t ${DOCKER_IMAGE_NAME}-frontend:%BUILD_NUMBER% ."
-                    bat "docker push ${DOCKER_IMAGE_NAME}-frontend:%BUILD_NUMBER%"
+                script {
+                    bat 'docker-compose push'
                 }
             }
         }
-        
-        stage('Deploy') {
+
+        stage('Deploy Application') {
             steps {
-                // Clean up existing containers and networks
-                bat 'docker-compose down'
-                
-                // Deploy using docker-compose
-                bat 'docker-compose up -d'
-            }
-        }
-    }
-    
-    post {
-        always {
-            // Clean up Docker login
-            script {
-                bat 'docker logout'
+                script {
+                    bat 'docker-compose down'
+                    bat 'docker-compose up -d'
+                }
             }
         }
     }
